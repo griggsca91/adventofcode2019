@@ -12,8 +12,24 @@ struct Segment {
 }
 
 impl Segment {
+    fn length(&self) -> f32 {
+        return((self.start.0 - self.end.0) + (self.start.1 - self.end.1)).abs()
+    }
+
     //https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection#In_two_dimensions
     fn intersects(&self, segment: &Segment) -> Option<Point> {
+        if (self.start.0 == 0.0 && self.start.1 == 0.0) {
+            return None;
+        }
+        if (self.end.0 == 0.0 && self.end.1 == 0.0) {
+            return None;
+        }
+        if (segment.start.0 == 0.0 && segment.start.1 == 0.0) {
+            return None;
+        }
+        if (segment.end.0 == 0.0 && segment.end.1 == 0.0) {
+            return None;
+        }
         //println!("self.start.0: {} self.end.0: {}", self.start.0, self.end.0);
         //println!("self.start.1: {} self.end.1: {}", self.start.1, self.end.1);
         //println!("segment.start.0: {} segment.end.0: {}", segment.start.0, segment.end.0);
@@ -88,6 +104,8 @@ fn create_map(route: Vec<&str>) -> Vec<Point> {
     let mut map: Vec<Point> = vec![];
     let mut x = 0.0;
     let mut y = 0.0;
+    let origin = Point(0.0, 0.0);
+    map.push(origin);
 
     for instruction in route {
         let characters: Vec<char> = instruction.chars().collect();
@@ -135,83 +153,38 @@ fn find_intersections(map_one: Vec<Point>, map_two: Vec<Point>) {
     let map_one_segments = generate_segments(map_one);
     let map_two_segments = generate_segments(map_two);
 
-    let mut least = 999999;
-    //println!("{:?}", map_one_segments);
-    //println!("{:?}", map_two_segments);
+    let mut least = 999999.0;
+    
+
+    let mut intersected_routes: Vec<Vec<Segment>> = vec![];
+
+    let mut map_1_total = 0.0;
+
     for segment in map_one_segments {
+        let mut map_2_total = 0.0;
         for segment2 in map_two_segments.iter() {
+            let mut path_two: Vec<Segment> = vec![];
             let intersection =  segment.intersects(segment2);
             match intersection {
                 Some(i) => {
-                    println!("{:?} {:?}", segment, segment2);
-                    println!("{:?}", i);
-                    let result = calculate_manhattan_distance(i);
-                    if least > result {
-                        least = result;
-                    }
-                    println!("{:?}", result);
+                     let new_segment = Segment{start: segment.start.clone(), end: i.clone()};
+                     let new_segment2 = Segment{start: segment2.start.clone(), end: i.clone()};
+                     let total = map_2_total + map_1_total + new_segment.length() + new_segment2.length();
+                     if least > total {
+                         least = total
+                     }
+                     map_2_total += segment2.length();
+                     break
                 }
                 _ => {
-                    continue;
+                    map_2_total += segment2.length();
                 }
             }
         }
+        map_1_total += segment.length();
     }
     println!("{}", least);
 }
-
-fn print_map(map: Vec<Point>) {
-    let buffer_size = 0.0;
-    let mut current = Point(0.0, 0.0);
-
-    let mut max_x = 0.0;
-    let mut min_x = 0.0;
-    let mut max_y = 0.0;
-    let mut min_y = 0.0;
-
-    for point in map.iter() {
-        if point.0 > max_x {
-            max_x = point.0;
-        }
-        if point.0 < min_x {
-            min_x = point.0;
-        }
-
-        if point.1 > max_y {
-            max_y = point.1;
-        }
-        if point.1 < min_y {
-            min_y = point.1;
-        }
-    }
-
-    println!("{} {} {} {}", max_x, min_x, max_y, min_y);
-    let rows = (min_y + max_y + buffer_size + 1.0) as i32;
-    let columns = (min_x + max_x + buffer_size + 1.0) as i32;
-
-    let mut m: Vec<Vec<char>> = vec![];
-    
-    for row in 0..rows {
-        let mut row: Vec<char> = vec![];
-        for column in 0..columns {
-            row.push('.');
-        }
-        m.push(row);
-    }
-
-    for point in map {
-
-    }
-
-    for row in m {
-        for column in row {
-            print!("{}", column);
-        }
-        print!("\n");
-    }
-}
-
-
 
 
 
